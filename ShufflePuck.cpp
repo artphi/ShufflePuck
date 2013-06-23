@@ -1,8 +1,8 @@
 /*
 *	Projet d'infographie
 *	Auteur: Olivier Francillon
-*
-*
+*	Projet codé sur Linux
+*	Ligne de commande: g++ -fpermissive -lGLU -lGL -lglut ShufflePuck.cpp && ./a.out 
 *
 */
 
@@ -25,6 +25,7 @@ int modeSolide = 0;
 int identMenu;
 int animation = 0;
 int started = 0;
+int winner = 0;
 
 /*************************
 * Paramètres de la fenètre
@@ -106,9 +107,47 @@ void resetMouse(){
 	glutWarpPointer(Wwidth/2, Wheight/2);
 	glutWarpPointer(Wwidth/2, Wheight/2);
 }
-void win(int player){
-	printf("Player %d win\n",player);
-	resetMouse();
+void lookAt(){
+	gluLookAt(	left,up,near, 	//Où je suis
+				0.0,0.0,0.0, 	//Oû je regarde
+				0.0,1.0,0.0);	//Comment je regarde
+	
+}
+
+void RenderString(float x, float y, void *font, const char* string, float r, float g, float b)
+{  
+  //char *c;
+  glDisable(GL_FOG);
+  glDisable(GL_LIGHTING);
+  glDisable(GL_TEXTURE_2D);
+  glPushMatrix();
+
+  glOrtho(-10,10,-10,10,-10,10);
+  glLoadIdentity();
+  gluLookAt(	0,0,-1, 	//Où je suis
+				0.0,0.0,0.0, 	//Oû je regarde
+				0.0,1.0,0.0);	//Comment je regarde
+  glColor3f(r, g, b); 
+  glRasterPos2f(x, y);
+
+  glutBitmapString(font, string);
+  lookAt();
+  glPopMatrix();
+
+  glEnable(GL_FOG);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_TEXTURE_2D);
+
+}
+void win(int value){
+	if(value==1){
+		RenderString(0.7,0.4, GLUT_BITMAP_TIMES_ROMAN_24, "You Win", 1,1,1);
+	} else if( value ==2){
+		RenderString(0.7,0.4, GLUT_BITMAP_TIMES_ROMAN_24, "You Loose", 1,1,1);
+	} else{
+		RenderString(0.7,0.4, GLUT_BITMAP_TIMES_ROMAN_24, "", 1,1,1);
+	}
+	
 }
 
 void MouseMove(int x, int y){
@@ -157,11 +196,16 @@ void initGame(int value){
 	palet1z=0.9;
 	palet1DZ=0.0;
 	palet1DX=0.0;
-	printf("INITED\n");
-
 	deplacementPX = deplacementX;
 	deplacementPZ = deplacementZ;
 	animation = value;
+	if(value == 1){
+		glutSetCursor(GLUT_CURSOR_NONE);
+		winner = 0;
+	}else{
+		glutSetCursor(GLUT_CURSOR_LEFT_ARROW);
+	}
+
 }
 
 void boudingPalet(float posBX, float posBZ){
@@ -231,10 +275,10 @@ void deplacementBalle(int start){
 	if (balleX >= tableL/2 - 0.02 - ballSize/2){ balleDX *= -1 ;}
 	if (balleX <= -(tableL/2 - 0.02 - ballSize/2)){ balleDX *= -1 ;}
 	
-	if (balleZ >= tableP/2){ win(2);initGame(0);};
+	if (balleZ >= tableP/2){ winner = 2;resetMouse();initGame(0);};
 	if (balleZ <= -tableP/2){ 
 		if(balleX > -(tableL/6) && balleX < (tableL/6)){
-			win(1);initGame(0);
+			winner = 1;resetMouse();initGame(0);
 		} else {
 			balleDZ *= -1;
 		}
@@ -415,17 +459,17 @@ void balle(float x, float y, float z){
 
 void axes(){
 	glLineWidth(5);
-        glColor3ub(255,0,0);
+        material(1,0,0);
         glBegin(GL_LINES);   
           glVertex3f(0.0,0.0,0.0); 
           glVertex3f(1.0,0.0,0.0); 
         glEnd();
-        glColor3ub(0,255,0);
+        material(0,1,0);
         glBegin(GL_LINES);   
           glVertex3f(0.0,0.0,0.0); 
           glVertex3f(0.0,1.0,0.0); 
         glEnd();
-        glColor3ub(0,0,255);
+        material(0,0,1);
         glBegin(GL_LINES);   
           glVertex3f(0.0,0.0,0.0); 
           glVertex3f(0.0,0.0,1.0); 
@@ -461,12 +505,9 @@ void fog(){
 	//la densité du bruillard
 }
 
-void lookAt(){
-	gluLookAt(	left,up,near, 	//Où je suis
-				0.0,0.0,0.0, 	//Oû je regarde
-				0.0,1.0,0.0);	//Comment je regarde
-	printf("left: %f, up: %f\n",left,up);
-}
+
+
+
 
 void display(){		
 	int i;		
@@ -474,15 +515,19 @@ void display(){
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);		// efface contenu de la fenêtre (couleur et profondeur)
 	glCullFace(GL_BACK);						//Enclenche le back face culling
 	glEnable(GL_DEPTH_TEST);					//Enclenche la estion de la profondeur
-	axes();
-	tableJeu();					//Dessin du plateau
-	glDisable(GL_TEXTURE_2D);
-	paletJoueur1(palet1x,0,palet1z);
-	balle(balleX,0,balleZ);
+	//axes();					//Axes pour la conception/debug
+	
+	tableJeu();					//Dessin de la table de jeu
+	glDisable(GL_TEXTURE_2D);	//Pas de textures sur les éléments suivant
+	paletJoueur1(palet1x,0,palet1z);	//Dessin du palet
+	balle(balleX,0,balleZ);				//Dessin de la balle
+	
 	glEnable(GL_TEXTURE_2D);
-	glPopMatrix();				//Dépile la matrice des coordonnées
-	light();
-	fog();
+					//Dépile la matrice des coordonnées
+	light();							//Ajout des lumières
+	fog();								//Ajout du fog
+	win(winner);
+	
 	glutSwapBuffers(); 			//Echange les buffers
  
 }
@@ -530,7 +575,7 @@ void gestionMenu(int value)
   switch(value)		//Gestion des menus
   {
 	case 1: 
-		initGame(1);
+		initGame(1); 
 		animation = 1; 
 		break;
 	case 2: 
