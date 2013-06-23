@@ -14,6 +14,12 @@
 #include <math.h>
 #include <time.h>
 
+#define MAX_NO_TEXTURES 2
+#define TERRAIN_TEXTURE   0
+#define BORDURE_TEXTURE   1
+
+GLuint  texture_id[MAX_NO_TEXTURES];
+
 float incr = 0.1;
 int modeSolide = 0;
 int identMenu;
@@ -23,14 +29,15 @@ int started = 0;
 /*************************
 * Paramètres de la fenètre
 */
-int Wwidth = 800;
-int Wheight = 500;
+int Wwidth = 1200;
+int Wheight = 900;
 
 /*************************
 * Paramètre de la caméra
 */
-float up = 2;
-float left = 1;
+float up = 1.3;
+float left = 0;
+float near = 2.5;
 
 /*************************
 * Paramètres de la table
@@ -45,30 +52,28 @@ float palet1x=0.0;
 float palet1z=0.9;
 float palet1DX=0.0;
 float palet1DZ=0.0;
-float palet2x=0.0;
-float palet2z=-0.9;
-float palet2DX=0.0;
-float palet2DZ=0.0;
 float paletL = 0.2;
 float paletP = 0.1;
 float deplacementX, deplacementPX = 0;
 float deplacementZ, deplacementPZ = 0;
 float maxDroite = tableL/2 - paletL/2;
 float maxGauche = -tableL/2 + paletL/2;
+int stick = 0;
 
 /*************************
 * Paramètres de la balle
 */
 float ballSize = 0.02;
-float balleX = 0.0, balleZ = 0.0;
+float balleX = 0.0, balleZ = 0.2;
 float balleDX = 0.0 , balleDZ = 0.0;
+float oldBDZ, oldBDX;
 
 /*************************
 * Paramètres des lumières
 */
 GLfloat lumiere_position[ ]= {3.0, 1.0, 0.0, 1.0};	
 GLfloat lum_ambiante[ ]={0.2, 0.2, 0.2, 1.0};
-GLfloat lum_diffuse[ ]={1, 1.0, 1.0, 1.0};
+GLfloat lum_diffuse[ ]={1.0, .5, .5, 1.0};
 
 GLfloat lumiere_position1[ ]= {0.0, 2.0, -1.0, 1.0};	
 GLfloat lum_diffuse1[ ]={1.0, 1, 1.0, 1.0};
@@ -97,17 +102,19 @@ const GLubyte facette[1][4] =
 {
 	{0,1,2,3}
 };
-
+void resetMouse(){
+	glutWarpPointer(Wwidth/2, Wheight/2);
+	glutWarpPointer(Wwidth/2, Wheight/2);
+}
 void win(int player){
 	printf("Player %d win\n",player);
+	resetMouse();
 }
 
 void MouseMove(int x, int y){
 
-	
 	deplacementX = ((float)x - Wwidth) /((float)(Wwidth/2)-100);
-	deplacementZ = ((float)y - Wheight) /((float)(Wheight/2)-75);
-	
+	deplacementZ = ((float)y - Wheight) /((float)(Wheight/2)-100*(Wwidth/Wheight));
 }
 
 void deplacementPalet(){
@@ -134,47 +141,60 @@ void deplacementPalet(){
 		palet1z = limiteSup;
 	}
 	deplacementPZ = deplacementZ;	
-	
+
 }
 
-void initGame(){
-	animation = 0;
+
+
+void initGame(int value){
+	
 	started=0;
 	balleX=0.0;
-	balleZ=0.0;
+	balleZ = 0.2;
 	balleDX=0.0;
 	balleDZ=0.0;
+	palet1x=0.0;
+	palet1z=0.9;
+	palet1DZ=0.0;
+	palet1DX=0.0;
+	printf("INITED\n");
+
+	deplacementPX = deplacementX;
+	deplacementPZ = deplacementZ;
+	animation = value;
 }
 
-void boudingPalet(int player, float posBX, float posBZ){
+void boudingPalet(float posBX, float posBZ){
 	float impactPos, posPaletX,posPaletZ;
-	float oldBDZ = balleDZ, oldBDX = balleDX;
 	int impact = 0;
-	int stick = 0;
-	if(player == 1){
-		posPaletX = palet1x;
-		posPaletZ = palet1z - paletP/2;
-	} else {
-		posPaletX = palet2x;
-		posPaletZ = palet2z + paletP/2;
+
+	if(balleDZ != 0){
+		oldBDZ = balleDZ;
+		oldBDX = balleDX;
 	}
 	
+		posPaletX = palet1x;
+		posPaletZ = palet1z - paletP/2;
+
+	
 	if(((posBZ >= posPaletZ && 
-		 posBZ <= posPaletZ + paletP &&
-		player == 1)  &&
+		 posBZ <= posPaletZ + paletP)  &&
 		posBX >= posPaletX - paletL/2 &&
 		posBX <= posPaletX + paletL/2)){
 
 		if(palet1DZ < 0 && palet1DZ <= balleDZ){
+			if(palet1z - balleZ < paletP/2){
+				balleZ = palet1z - paletP/2;
+			}
 			balleDZ = palet1DZ;
 			balleDX = palet1DX;
 			stick = 1;
-		}else if(palet1DZ == 0){
+		}else if(palet1DZ == 0 && stick != 1){
 			balleDZ = palet1DZ;
 			balleDX = palet1DX;
 			stick = 1;
-		}else if(palet1DZ >= 0 || palet1DZ > -oldBDZ){
-			balleDZ=oldBDZ+palet1DZ;
+		}else {
+			balleDZ=-(oldBDZ+palet1DZ);
 			balleDX=oldBDX+palet1DX;
 			stick = 0;
 		}
@@ -185,19 +205,18 @@ void boudingPalet(int player, float posBX, float posBZ){
 
 	if(impact && !stick ){
 		
-		if(player == 1){
+		
 			if(balleDZ > 0){
-				balleDZ += 10*palet1DZ;
+				balleDZ += palet1DZ;
 			}else{
-				balleDZ -= 10*palet1DZ;
+				balleDZ -= palet1DZ;
 			}
 			
 				
 				balleDX += palet1DX/9 ;
 			
-		}
+		
 	}
-	printf("Stick: %d\n", stick);
 	
 	
 }
@@ -208,11 +227,21 @@ void deplacementBalle(int start){
 		balleDZ = ((rand() % 10) + 1 )/1000.0;
 	}
 
+	//Collisions bordures
 	if (balleX >= tableL/2 - 0.02 - ballSize/2){ balleDX *= -1 ;}
 	if (balleX <= -(tableL/2 - 0.02 - ballSize/2)){ balleDX *= -1 ;}
-	if (balleZ >= tableP/2){ win(2);initGame();};
-	if (balleZ <= -tableP/2){ win(1);initGame();};
-	boudingPalet(1,balleX,balleZ);
+	
+	if (balleZ >= tableP/2){ win(2);initGame(0);};
+	if (balleZ <= -tableP/2){ 
+		if(balleX > -(tableL/6) && balleX < (tableL/6)){
+			win(1);initGame(0);
+		} else {
+			balleDZ *= -1;
+		}
+	}
+		
+	//Collision palet
+	boudingPalet(balleX,balleZ);
 	
 	balleX += balleDX;
 	balleZ += balleDZ;
@@ -228,32 +257,136 @@ void material(float r, float b, float g){
 
 	
 }
+
+void texturing(){
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    glEnable(GL_TEXTURE_2D);
+}
+
+void chargeTexture (char *nomFichier,				// nom du fichier en format .raw
+	int largeur,					// largeur de l'image en pixels
+	int hauteur,					// hauteur de l'image en pixels
+	int profondeur,					// profondeur de l'image en bytes
+	GLenum typeCouleur,				// type de couleur OpenGL à utiliser
+	GLenum typeFiltre )				// type de filtre à utiliser
+{
+	GLubyte *texture ;
+	FILE *file;
+
+	if ((file = fopen(nomFichier, "rb"))==NULL )
+	{
+		printf ( "File Not Found : %s\n", nomFichier );
+		exit   ( 1 );
+	}
+
+	texture = (GLubyte *) malloc ( largeur * hauteur * profondeur * ( sizeof(GLubyte)) );
+
+	if (texture == NULL)
+	{
+		printf ( "Cannot allocate memory for texture\n" );
+		fclose ( file);
+		exit   ( 1 );
+	}
+
+	fread  ( texture , largeur * hauteur * profondeur, 1 , file );
+	fclose ( file);
+
+	//  définit type de filtrage
+	glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, typeFiltre );
+	glTexParameteri ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, typeFiltre );
+
+	//  définit environnement
+	glTexEnvf ( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+	//  construit les mipmaps
+	gluBuild2DMipmaps ( GL_TEXTURE_2D, typeCouleur, largeur, hauteur,
+		typeCouleur, GL_UNSIGNED_BYTE, texture );
+
+	//  libère la mémoire
+	free ( texture );
+}
+
+//Génération d'un cube avec UV
+ void drawBox(GLfloat size, GLfloat repeatTextU,GLfloat repeatTextV )
+{
+   GLfloat n[6][3] =
+  {
+    {-1.0, 0.0, 0.0},
+    {0.0, 1.0, 0.0},
+    {1.0, 0.0, 0.0},
+    {0.0, -1.0, 0.0},
+    {0.0, 0.0, 1.0},
+    {0.0, 0.0, -1.0}
+  };
+   GLint faces[6][4] =
+  {
+    {0, 1, 2, 3},
+    {3, 2, 6, 7},
+    {7, 6, 5, 4},
+    {4, 5, 1, 0},
+    {5, 6, 2, 1},
+    {7, 4, 0, 3}
+  };
+  GLfloat v[8][3];
+  GLint i;
+
+  v[0][0] = v[1][0] = v[2][0] = v[3][0] = -size / 2;
+  v[4][0] = v[5][0] = v[6][0] = v[7][0] = size / 2;
+  v[0][1] = v[1][1] = v[4][1] = v[5][1] = -size / 2;
+  v[2][1] = v[3][1] = v[6][1] = v[7][1] = size / 2;
+  v[0][2] = v[3][2] = v[4][2] = v[7][2] = -size / 2;
+  v[1][2] = v[2][2] = v[5][2] = v[6][2] = size / 2;
+
+  for (i = 5; i >= 0; i--) {
+    glBegin(GL_QUADS);
+    glNormal3fv(&n[i][0]);
+    glTexCoord2f(0, 0);glVertex3fv(&v[faces[i][0]][0]);
+    glTexCoord2f(repeatTextU, 0);glVertex3fv(&v[faces[i][1]][0]);
+    glTexCoord2f(repeatTextU, repeatTextV);glVertex3fv(&v[faces[i][2]][0]);
+    glTexCoord2f(0, repeatTextV);glVertex3fv(&v[faces[i][3]][0]);
+    glEnd();
+  }
+}
+
+
+
 void plateau()
 {
 	glPushMatrix();
 	glScalef(tableL,0.02,-tableP);
-	glutSolidCube(1);
+	drawBox(1,2,1);
 	glPopMatrix();
 
 }
 
 //Dessin de bordure position x,y,z et dimension longueur, hauteur, profondeur
-void bordure(float x, float y, float z, float l, float h, float p)
+void bordure(float x, float y, float z, float l, float h, float p, float u, float v)
 {
-	material(0,0,1);
+	//material(0,0,1);
 	glPushMatrix();
 	glTranslatef(x,y,z);
 	glScalef(l,h,p);
-	glutSolidCube(1);
+	drawBox(1,u,v);
 	glPopMatrix();
 }
 
 void tableJeu(){
-	material(0,1,0);
+
 	glPushMatrix();
+
+	material(1,1,1);
+
+	chargeTexture ( "terrain.bmp",600, 600, 3, GL_RGB, GL_LINEAR );
 	plateau();
-	bordure(-0.49,0.06,0,0.02,0.1,-2);
-	bordure(0.49,0.06,0,0.02,0.1,-2);
+
+	chargeTexture ( "bordure.bmp",111, 80, 3, GL_RGB, GL_LINEAR );
+	bordure(-0.49,0.06,0,0.02,0.1,-2,5,1);
+	bordure(0.49,0.06,0,0.02,0.1,-2,5,1);
+	chargeTexture ( "bordure.bmp",111, 80, 3, GL_RGB, GL_LINEAR );
+	bordure(tableL/3,0.06,-(tableP/2)-0.01,tableL/3,0.1,0.02,.5,2);
+	bordure(-tableL/3,0.06,-(tableP/2)-0.01,tableL/3,0.1,0.02,.5,2);
 	glPopMatrix();
 }
 
@@ -265,24 +398,14 @@ void paletJoueur1(float x, float y, float z){
 	glPushMatrix();
 	glTranslatef(x,y + hauteur/2,z);
 	glScalef(largeur,hauteur,profondeur);
-	glutSolidCube(1);
+	drawBox(1,1,1);
 	glPopMatrix();
 }
 
-void paletJoueur2(float x, float y, float z){
-	float largeur = 0.2;
-	float hauteur = 0.05;
-	float profondeur = 0.1;
-	material(.5,.5,.5);
-	glPushMatrix();
-	glTranslatef(x,y + hauteur/2,z);
-	glScalef(largeur,hauteur,profondeur);
-	glutSolidCube(1);
-	glPopMatrix();
-}
+
 
 void balle(float x, float y, float z){
-	material(1,1,1);
+	material(0.5,0.2,0.2);
 	glPushMatrix();
 	glTranslatef(x,0.04,z);
 	glutSolidSphere(ballSize,10,10);
@@ -339,9 +462,10 @@ void fog(){
 }
 
 void lookAt(){
-	gluLookAt(	left,up,3.0, 	//Où je suis
+	gluLookAt(	left,up,near, 	//Où je suis
 				0.0,0.0,0.0, 	//Oû je regarde
 				0.0,1.0,0.0);	//Comment je regarde
+	printf("left: %f, up: %f\n",left,up);
 }
 
 void display(){		
@@ -351,18 +475,14 @@ void display(){
 	glCullFace(GL_BACK);						//Enclenche le back face culling
 	glEnable(GL_DEPTH_TEST);					//Enclenche la estion de la profondeur
 	axes();
-	
-	glColor3ub(0,255,0);		//Vert
 	tableJeu();					//Dessin du plateau
-	//calculDeplacement();
-	
+	glDisable(GL_TEXTURE_2D);
 	paletJoueur1(palet1x,0,palet1z);
-	paletJoueur2(palet2x,0,palet2z);
 	balle(balleX,0,balleZ);
+	glEnable(GL_TEXTURE_2D);
 	glPopMatrix();				//Dépile la matrice des coordonnées
 	light();
 	fog();
-
 	glutSwapBuffers(); 			//Echange les buffers
  
 }
@@ -372,10 +492,12 @@ void reshape(int w, int h) // fenétre pour l'affichage de la scène 3D
 	glViewport (0, 0, (GLsizei) w, (GLsizei) h);
 	glMatrixMode (GL_PROJECTION);
 	glLoadIdentity();
+	Wwidth=glutGet(GLUT_SCREEN_WIDTH);
+	Wheight=glutGet(GLUT_SCREEN_HEIGHT);
 
 	//Projection perspective
 	gluPerspective	(	50.0,		// angle d'ouverture
-						4.0/3.0,	// rapport
+						(float)Wwidth/(float)Wheight,	// rapport
 						0.1,		// distance avant-plan
 						1000.0);	// distance arrière-plan
 
@@ -386,7 +508,7 @@ void reshape(int w, int h) // fenétre pour l'affichage de la scène 3D
 void init(void){
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glClearColor(255.0, 255.0, 255.0, 0.0);		// Fond Blanc
+	glClearColor(0.0, 0.0, 0.0, 0.0);		// Fond Blanc
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_NORMALIZE);
@@ -394,6 +516,7 @@ void init(void){
 	glEnable(GL_LIGHT1);
 	glEnable(GL_LIGHT2);
 	glEnable(GL_FOG);
+	texturing();
 	glMatrixMode(GL_MODELVIEW);					// matrice de modélisation
 	glLoadIdentity();							// matrice d'identité
 	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 	//Mode Polygone
@@ -407,21 +530,26 @@ void gestionMenu(int value)
   switch(value)		//Gestion des menus
   {
 	case 1: 
-		modeSolide = 0;  
+		initGame(1);
+		animation = 1; 
 		break;
 	case 2: 
-		modeSolide = 1;  
+		initGame(1);
+		animation = 0; 
 		break;
 	case 3: 
-		modeSolide = 2;  
+		left = 0;
+		up = 1.3;
+		near = 2.5;
+		init();
 		break;
 	case 4: 
-		animation = 1;
+		left = 0;
+		up = 3;
+		near = 0.1;
+		init();
 		break;
 	case 5: 
-		animation = 0;
-		break;
-	case 6: 
 		exit(0); 
 		break;
   }
@@ -431,12 +559,11 @@ void gestionMenu(int value)
 
 void menu(){
 	identMenu=glutCreateMenu(gestionMenu); //Ajout des menus
-	glutAddMenuEntry("mode plein (p)", 1);
-	glutAddMenuEntry("mode filaire (f)", 2);
-	glutAddMenuEntry("mode point (t)", 3);
-	glutAddMenuEntry("animation on (i)", 4);
-	glutAddMenuEntry("animation off (o)", 5);
-	glutAddMenuEntry("quitter (q)", 6);
+	glutAddMenuEntry("Start/restart game (1)", 1);
+	glutAddMenuEntry("pause game (2)", 2);
+	glutAddMenuEntry("Camera 3D (3)", 3);
+	glutAddMenuEntry("Camera top-down (4)", 4);
+	glutAddMenuEntry("quitter (q)", 5);
 	glutAttachMenu(GLUT_LEFT_BUTTON); //On attache le menu au bouton gauche de la souris
 }
 
@@ -444,32 +571,23 @@ void  keyboard (unsigned char key, int x, int y)
 {
     switch (key) { 	  //Traitement des touches
             
-        case 'p':    //  Change le mode en solide
-        case 'P':
-			modeSolide = 0;
+        case '1':    
+			gestionMenu(1);
             break;
-        case 'f':    // change le mode en filaire
-        case 'F':
-            modeSolide = 1;
+        case '2':    
+            gestionMenu(2);
             break;
-        case 't':    //  change le mode en point
-        case 'T':
-			modeSolide = 3;
+        case '3':    
+			gestionMenu(3);
             break;
-        case 'i':
-        case 'I':
-        	animation = 1;
+        case '4':
+			gestionMenu(4);
         	break;
-        case 'o':
-        case 'O':
-        	animation = 0;
+        case '5':
+        case 27 :
+	        gestionMenu(5);
         	break;
-        case 'q':	 // quitte le programme
-        case 'Q':
-        case 27 :	// quitte le programme avec la touche ESC
-            exit(0);
-            break;
-            		//Il y a surement un moyen plus propre
+            		
         case 'w':  
         case 'W':
         	up+=0.1;
@@ -503,6 +621,8 @@ void anime(void)
     if(animation){
     	if (!started){
     		started = 1;
+    		deplacementPX = deplacementX;
+			deplacementPZ = deplacementZ;
     		deplacementBalle(started);	
     	}
     	deplacementPalet();
@@ -517,11 +637,13 @@ void anime(void)
 int main(int argc, char** argv)			
 {
 	glutInit(&argc, argv);				// initialise GLUT et traite les éventuels
-	glutInitDisplayMode(GLUT_DOUBLE|GLUT_DEPTH);	// double tampon, z-buffer
+	Wwidth=glutGet(GLUT_SCREEN_WIDTH);
+	Wheight=glutGet(GLUT_SCREEN_HEIGHT);
+	glutInitDisplayMode(GLUT_DOUBLE|GLUT_DEPTH);	// double tampon, z-buffer;
 	glutInitWindowSize(Wwidth, Wheight);					// largeur et hauteur de la fenêtre
-	glutInitWindowPosition(300, 100);				// position de la fenêtre
+	
+	glutInitWindowPosition(0, 0);				// position de la fenêtre
 	glutCreateWindow("Shuffle Puck");			// Création d'une fenêtre
-
 	glutPassiveMotionFunc(MouseMove); 
 	reshape(1, 1);						// Apelle la fonction de reshape
 
@@ -530,6 +652,5 @@ int main(int argc, char** argv)
 	menu();								// Apelle la fonction du menu
 	glutKeyboardFunc(keyboard);			// Apelle la fonction de gestion du clavier
 	glutIdleFunc(anime);				// Apelle la fonction d'animation
-
 	glutMainLoop();						// Lance la boucle
 }
