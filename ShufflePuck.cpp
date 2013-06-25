@@ -4,6 +4,40 @@
 *	Projet codé sur Linux
 *	Ligne de commande: g++ -fpermissive -lGLU -lGL -lglut ShufflePuck.cpp && ./a.out 
 *
+* _______________________________________________________________________________________________
+* Projet en Infographie
+* 
+* Objectifs
+* Permettre à l’étudiant-­‐e de:
+* 	• aller plus loin avec OpenGL
+* 	• modéliser un petit monde virtuel autonome en 3D
+* 	• réaliser un jeu simple par l’animation
+* 	• réaliser une interface utilisateur par le menu, la souris et touches clavier
+* 	• appliquer plusieurs types de lumières à la scène 3D
+* 	• appliquer les textures différentes à chaque objet 3D de la scène
+* Cahier de charges
+* Chaque étudiant-­‐e :
+* 	• programme individuellement et apporte l’entête et des commentaires au code
+* 	• défini un petit monde virtuel en 3D, nécessaire pour développer un jeu simple
+* 	• réalise un simple jeu non-­‐existante (à imaginer) en utilisant les animations
+* 	• utilise le bouton de la souris afin d’enclencher l’animation
+* 	• place bien la camera afin d’avoir une visualisation correcte de la scène et ajout 
+* 		l’option de changer le point de vue de la scène par les touches clavier
+* 	• applique au moins trois types de lumières de la couleur différente chaque une
+* 	• ajute l’effet de transparence ou le brouillard
+* 	• applique des textures sur tous les objets de la scène
+* 	• défini un menu avec les sous-­‐menus permettant de choisir différentes options de
+* 	visualisation de la scène comme:
+* 		o un affichage en sommets, fil-­‐de-­‐fer et à facettes pleines o activer ou désactiver
+* 		chaque lumière séparément 
+* 		o activer ou désactiver la transparence (brouillard)
+* 		o activer ou désactiver les textures et
+* 		o quitter l’application
+* 		• se satisfait avec son travail qui réalisera
+* Délai: 
+* dernière séance du cours, démo en classe.
+* _______________________________________________________________________________________________
+* 
 */
 
 
@@ -20,6 +54,7 @@
 
 GLuint  texture_id[MAX_NO_TEXTURES];
 
+int affichageMode = 0;
 float incr = 0.1;
 int modeSolide = 0;
 int identMenu;
@@ -131,7 +166,7 @@ void RenderString(float x, float y, void *font, const char* string, float r, flo
   glRasterPos2f(x, y);
 
   glutBitmapString(font, string);
-  lookAt();
+  lookAt();http://www.opengl.org/resources/libraries/glut/spec3/node50.html
   glPopMatrix();
 
   glEnable(GL_FOG);
@@ -150,11 +185,6 @@ void win(int value){
 	
 }
 
-void MouseMove(int x, int y){
-
-	deplacementX = ((float)x - Wwidth) /((float)(Wwidth/2)-100);
-	deplacementZ = ((float)y - Wheight) /((float)(Wheight/2)-100*(Wwidth/Wheight));
-}
 
 void deplacementPalet(){
 	palet1DX = deplacementX - deplacementPX;
@@ -564,7 +594,13 @@ void init(void){
 	texturing();
 	glMatrixMode(GL_MODELVIEW);					// matrice de modélisation
 	glLoadIdentity();							// matrice d'identité
-	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 	//Mode Polygone
+	if(affichageMode == 0){
+		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); 	//Mode Polygone
+	}else if(affichageMode == 1){
+		glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);	//Mode Ligne
+	}else{
+		glPolygonMode(GL_FRONT_AND_BACK,GL_POINT); 	//Mode Point
+	}
 	lookAt();
 	
 }
@@ -594,7 +630,19 @@ void gestionMenu(int value)
 		near = 0.1;
 		init();
 		break;
-	case 5: 
+	case 5:
+		affichageMode = 0;
+		init();
+		break;
+	case 6:
+		affichageMode = 1;
+		init();
+		break;
+	case 7:
+		affichageMode = 2;
+		init();
+		break;
+	case 8: 
 		exit(0); 
 		break;
   }
@@ -608,8 +656,11 @@ void menu(){
 	glutAddMenuEntry("pause game (2)", 2);
 	glutAddMenuEntry("Camera 3D (3)", 3);
 	glutAddMenuEntry("Camera top-down (4)", 4);
-	glutAddMenuEntry("quitter (q)", 5);
-	glutAttachMenu(GLUT_LEFT_BUTTON); //On attache le menu au bouton gauche de la souris
+	glutAddMenuEntry("Mode Solide",5);
+	glutAddMenuEntry("Mode Ligne",6);
+	glutAddMenuEntry("Mode Point",7);
+	glutAddMenuEntry("quitter (q)", 8);
+	glutAttachMenu(GLUT_RIGHT_BUTTON); //On attache le menu au bouton gauche de la souris
 }
 
 void  keyboard (unsigned char key, int x, int y)
@@ -628,11 +679,11 @@ void  keyboard (unsigned char key, int x, int y)
         case '4':
 			gestionMenu(4);
         	break;
-        case '5':
+        case 'q':
+        case 'Q':
         case 27 :
 	        gestionMenu(5);
         	break;
-            		
         case 'w':  
         case 'W':
         	up+=0.1;
@@ -656,6 +707,14 @@ void  keyboard (unsigned char key, int x, int y)
     }
 
     glutPostRedisplay(); //Relance l'affichage
+}
+
+
+}
+void mouseMove(int x, int y){
+
+	deplacementX = ((float)x - Wwidth) /((float)(Wwidth/2)-100);
+	deplacementZ = ((float)y - Wheight) /((float)(Wheight/2)-100*(Wwidth/Wheight));
 }
 
 
@@ -689,7 +748,8 @@ int main(int argc, char** argv)
 	
 	glutInitWindowPosition(0, 0);				// position de la fenêtre
 	glutCreateWindow("Shuffle Puck");			// Création d'une fenêtre
-	glutPassiveMotionFunc(MouseMove); 
+	glutPassiveMotionFunc(mouseMove); 
+
 	reshape(1, 1);						// Apelle la fonction de reshape
 
 	init();								// Apelle la fonction d'initialisation
