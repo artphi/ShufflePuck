@@ -114,16 +114,16 @@ int switch3 = 1; //Switch on/off lumière 3
 
 //Paramètres lumière 1
 GLfloat lumiere_position[ ]= {3.0, 1.0, 0.0, 1.0};	
-GLfloat lum_ambiante[ ]={0.2, 0.2, 0.2, 1.0};
-GLfloat lum_diffuse[ ]={1.0, .5, .5, 1.0};
+GLfloat lum_ambiante[ ]={01, 0.2, 0.2, 0.0};
+GLfloat lum_diffuse[ ]={1, 1, 1, 1.0};
 
 //Paramètres lumière 2
 GLfloat lumiere_position1[ ]= {0.0, 2.0, -1.0, 1.0};	
-GLfloat lum_diffuse1[ ]={1.0, 1, 1.0, 1.0};
+GLfloat lum_diffuse1[ ]={1.0, 0.5, 0.5, 1.0};
 
 //Paramètres lumière 3
 GLfloat lumiere_position2[ ]= {2.0, 0.0, 2.0, 1.0};	
-GLfloat lum_diffuse2[ ]={1.0, 1.0, 1, 1.0};
+GLfloat lum_diffuse2[ ]={0.5, 0.5, 1, 1.0};
 
 
 /*************************
@@ -328,12 +328,14 @@ void deplacementBalle(int start){
 }
 
 void material(float r, float b, float g){
+	
 	GLfloat mat_diffuse[ ]={r,b,g,1.0};
 	GLfloat mat_specular[ ]={1,1,1,1};
 	GLfloat surf_shininess[ ]={30};
 	glMaterialfv(GL_FRONT,GL_DIFFUSE, mat_diffuse);			//Matérieau Diffu
 	glMaterialfv(GL_FRONT,GL_SPECULAR, mat_specular);
 	glMaterialfv(GL_FRONT,GL_SHININESS, surf_shininess);
+
 
 	
 }
@@ -380,9 +382,12 @@ void chargeTexture (char *nomFichier,				// nom du fichier en format .raw
 	//  définit environnement
 	glTexEnvf ( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
-	//  construit les mipmaps
+	//  construit les mipmaps 
+	//  ***********************
+	//  * Attention, pour linux, il faut mettre GL_BGR en 5 ème position, sinon le bleu et le rouge
+	//  * sont inversé
 	gluBuild2DMipmaps ( GL_TEXTURE_2D, typeCouleur, largeur, hauteur,
-		typeCouleur, GL_UNSIGNED_BYTE, texture );
+		GL_BGR, GL_UNSIGNED_BYTE, texture );
 
 	//  libère la mémoire
 	free ( texture );
@@ -436,7 +441,7 @@ void plateau()
 {
 	glPushMatrix();
 	glScalef(tableL,0.02,-tableP);
-	drawBox(1,2,1);
+	drawBox(1,2,2);
 	glPopMatrix();
 
 }
@@ -457,14 +462,14 @@ void tableJeu(){
 	glPushMatrix();
 
 	material(1,1,1);
-
-	chargeTexture ( "terrain.bmp",600, 600, 3, GL_RGB, GL_LINEAR );
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	chargeTexture ( "terrain.bmp",512, 512, 3, GL_RGB, GL_LINEAR);
 	plateau();
 
-	chargeTexture ( "bordure.bmp",111, 80, 3, GL_RGB, GL_LINEAR );
-	bordure(-0.49,0.06,0,0.02,0.1,-2,5,1);
-	bordure(0.49,0.06,0,0.02,0.1,-2,5,1);
-	chargeTexture ( "bordure.bmp",111, 80, 3, GL_RGB, GL_LINEAR );
+	chargeTexture ( "bordure.bmp",200, 200, 3, GL_RGB, GL_LINEAR );
+	bordure(-0.49,0.06,0,0.02,0.1,-2,8,1);
+	bordure(0.49,0.06,0,0.02,0.1,-2,8,1);
+	chargeTexture ( "bordure.bmp",200, 200, 3, GL_RGB, GL_LINEAR );
 	bordure(tableL/3,0.06,-(tableP/2)-0.01,tableL/3,0.1,0.02,.5,2);
 	bordure(-tableL/3,0.06,-(tableP/2)-0.01,tableL/3,0.1,0.02,.5,2);
 	glPopMatrix();
@@ -485,9 +490,9 @@ void paletJoueur1(float x, float y, float z){
 
 
 void balle(float x, float y, float z){
-	material(0.5,0.2,0.2);
+	material(1,0.2,0.2);
 	glPushMatrix();
-	glTranslatef(x,0.04,z);
+	glTranslatef(x,0.03,z);
 	glutSolidSphere(ballSize,10,10);
 	glPopMatrix();
 
