@@ -133,16 +133,22 @@ int switchFog = 1; //Switch on/off fog
 GLfloat fogColor[4] ={0.8,0.8,0.8,1.};
 
 
-
+/*************************
+* Prototypes de fonctions
+*/
 
 void fogInit();
 void lightInit();
 void menu();
 
+
+/* Centre la souris au centre de l'écrant */
 void resetMouse(){
 	glutWarpPointer(Wwidth/2, Wheight/2);
 	glutWarpPointer(Wwidth/2, Wheight/2);
 }
+
+/* Définition de la caméra */
 void lookAt(){
 	gluLookAt(	left,up,near, 	//Où je suis
 				0.0,0.0,0.0, 	//Oû je regarde
@@ -150,24 +156,27 @@ void lookAt(){
 	
 }
 
+
+/* Ecriture sur l'écran */
 void RenderString(float x, float y, void *font, const char* string, float r, float g, float b)
 {  
-  //char *c;
+  
+  //On désactive les effets avant d'écrire
   glDisable(GL_FOG);
   glDisable(GL_LIGHTING);
   glDisable(GL_TEXTURE_2D);
+  
   glPushMatrix();
-
-  glOrtho(-10,10,-10,10,-10,10);
-  glLoadIdentity();
-  gluLookAt(	0,0,-1, 	//Où je suis
+  	//On définit une projection orthogonale
+	glOrtho(-10,10,-10,10,-10,10);
+	glLoadIdentity();
+	gluLookAt(	0,0,-1, 	//Où je suis
 				0.0,0.0,0.0, 	//Oû je regarde
 				0.0,1.0,0.0);	//Comment je regarde
-  glColor3f(r, g, b); 
-  glRasterPos2f(x, y);
-
-  glutBitmapString(font, string);
-  lookAt();
+	glColor3f(r, g, b); 
+	glRasterPos2f(x, y);
+	glutBitmapString(font, string);
+	lookAt();
   glPopMatrix();
 
   fogInit();
@@ -175,7 +184,10 @@ void RenderString(float x, float y, void *font, const char* string, float r, flo
   glEnable(GL_TEXTURE_2D);
 
 }
+
+/* Vérification de victoire/perte */
 void win(int value){
+
 	if(value==1){
 		RenderString(0.7,0.4, GLUT_BITMAP_TIMES_ROMAN_24, "You Win", 1,1,1);
 	} else if( value ==2){
@@ -186,22 +198,32 @@ void win(int value){
 	
 }
 
-
+/* Calculs du déplacement du palet */
 void deplacementPalet(){
-	palet1DX = deplacementX - deplacementPX;
-	palet1x += palet1DX;
+
+	float limiteSup, limiteInf;
 	float limite = tableL/2 - paletL/2 -0.02;
+
+	//Calcul du delta X (pos actuelle - pos précédente)
+	palet1DX = deplacementX - deplacementPX;
+	// Pos actuelle
+	palet1x += palet1DX;
+	
+	//Calcul des limites gauche/droite
 	if (palet1x >= limite){
 		palet1x = limite;
 	} else if (palet1x <= -limite){
 		palet1x = -limite;
 	}
+	//Pos X précédente actualisée
 	deplacementPX = deplacementX;	
-	float limiteSup, limiteInf;
 	
 	
+	//Calcul du delta Y
 	palet1DZ = deplacementZ - deplacementPZ;
 	palet1z += palet1DZ;
+
+	//Calcul des limite Sup et inf
 	limiteSup = (tableP/6 + paletP/2);
 	limiteInf = (tableP/2 - paletP/2);
 
@@ -210,12 +232,14 @@ void deplacementPalet(){
 	} else if (palet1z <= limiteSup){
 		palet1z = limiteSup;
 	}
+	
+	//
 	deplacementPZ = deplacementZ;	
 
 }
 
 
-
+//Initialisation du jeu (Start)
 void initGame(int value){
 	
 	started=0;
@@ -239,6 +263,8 @@ void initGame(int value){
 
 }
 
+
+/* Collision */
 void boudingPalet(float posBX, float posBZ){
 	float impactPos, posPaletX,posPaletZ;
 	int impact = 0;
@@ -466,10 +492,10 @@ void tableJeu(){
 	chargeTexture ( "terrain.bmp",512, 512, 3, GL_RGB, GL_LINEAR);
 	plateau();
 
-	chargeTexture ( "bordure.bmp",200, 200, 3, GL_RGB, GL_LINEAR );
+	chargeTexture ( "bordure.bmp",128, 128, 3, GL_RGB, GL_LINEAR );
 	bordure(-0.49,0.06,0,0.02,0.1,-2,8,1);
 	bordure(0.49,0.06,0,0.02,0.1,-2,8,1);
-	chargeTexture ( "bordure.bmp",200, 200, 3, GL_RGB, GL_LINEAR );
+	chargeTexture ( "bordure.bmp",128, 128, 3, GL_RGB, GL_LINEAR );
 	bordure(tableL/3,0.06,-(tableP/2)-0.01,tableL/3,0.1,0.02,.5,2);
 	bordure(-tableL/3,0.06,-(tableP/2)-0.01,tableL/3,0.1,0.02,.5,2);
 	glPopMatrix();
@@ -643,18 +669,16 @@ void init(void){
 	
 }
 
-
+/* Gestion des menus */
 void gestionMenu(int value)
 {
   switch(value)		//Gestion des menus
   {
 	case 1: 
-		initGame(1); 
-		animation = 1; 
+		initGame(1); 	
 		break;
 	case 2: 
-		initGame(1);
-		animation = 0; 
+		initGame(0);
 		break;
 	case 3: 
 		left = 0;
@@ -686,7 +710,7 @@ void gestionMenu(int value)
 		}else{
 			switch1 = 1;
 		}
-		//lightInit();
+		
 		break;
 	case 9:
 		if(switch2){
@@ -694,7 +718,7 @@ void gestionMenu(int value)
 		}else{
 			switch2 = 1;
 		}
-		//lightInit();
+		
 		break;
 	case 10:
 		if(switch3){
@@ -702,7 +726,7 @@ void gestionMenu(int value)
 		}else{
 			switch3 = 1;
 		}
-		//lightInit();
+		
 		break;
 	case 11:
 		if(switchFog){
@@ -710,7 +734,7 @@ void gestionMenu(int value)
 		}else{
 			switchFog = 1;
 		}
-		//fogInit();
+		
 		break;
 	case 12: 
 		exit(0); 
@@ -722,10 +746,11 @@ void gestionMenu(int value)
   glutPostRedisplay();
 }
 
+/* Création des menus */
 void menu(){
 	identMenu=glutCreateMenu(gestionMenu); //Ajout des menus
 	glutAddMenuEntry("Start/restart game (1)", 1);
-	glutAddMenuEntry("pause game (2)", 2);
+	glutAddMenuEntry("Stop game (2)", 2);
 	glutAddMenuEntry("Camera 3D (3)", 3);
 	glutAddMenuEntry("Camera top-down (4)", 4);
 	glutAddMenuEntry("Mode Solide",5);
@@ -755,6 +780,8 @@ void menu(){
 	glutAttachMenu(GLUT_RIGHT_BUTTON); //On attache le menu au bouton gauche de la souris
 }
 
+
+/* Gestion du clavier */
 void  keyboard (unsigned char key, int x, int y)
 {
     switch (key) { 	  //Traitement des touches
@@ -776,6 +803,8 @@ void  keyboard (unsigned char key, int x, int y)
         case 27 :
 	        gestionMenu(12);
         	break;
+        /* 
+        //Debug et aide à la modelisation
         case 'w':  
         case 'W':
         	up+=0.1;
@@ -796,20 +825,20 @@ void  keyboard (unsigned char key, int x, int y)
         	left-=0.1;
         	init();
         	break;
+        */
     }
 
     glutPostRedisplay(); //Relance l'affichage
 }
 
-
-
+/* Récupération de la position x et y de la souris */
 void mouseMove(int x, int y){
 
 	deplacementX = ((float)x - Wwidth) /((float)(Wwidth/2)-100);
 	deplacementZ = ((float)y - Wheight) /((float)(Wheight/2)-100*(Wwidth/Wheight));
 }
 
-
+/* Boucle d'animation / jeu */
 void anime(void)
 {
     
@@ -822,14 +851,12 @@ void anime(void)
     		deplacementBalle(started);	
     	}
     	deplacementPalet();
-    	deplacementBalle(!started);
-
-	    
+    	deplacementBalle(!started);    
 	}
-	
-	
     glutPostRedisplay();
 }
+
+
 int main(int argc, char** argv)			
 {
 	glutInit(&argc, argv);				// initialise GLUT et traite les éventuels
