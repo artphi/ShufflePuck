@@ -107,13 +107,21 @@ float oldBDZ, oldBDX;
 /*************************
 * Paramètres des lumières
 */
+
+int switch1 = 1; //Switch on/off lumière 1
+int switch2 = 1; //Switch on/off lumière 2
+int switch3 = 1; //Switch on/off lumière 3
+
+//Paramètres lumière 1
 GLfloat lumiere_position[ ]= {3.0, 1.0, 0.0, 1.0};	
 GLfloat lum_ambiante[ ]={0.2, 0.2, 0.2, 1.0};
 GLfloat lum_diffuse[ ]={1.0, .5, .5, 1.0};
 
+//Paramètres lumière 2
 GLfloat lumiere_position1[ ]= {0.0, 2.0, -1.0, 1.0};	
 GLfloat lum_diffuse1[ ]={1.0, 1, 1.0, 1.0};
 
+//Paramètres lumière 3
 GLfloat lumiere_position2[ ]= {2.0, 0.0, 2.0, 1.0};	
 GLfloat lum_diffuse2[ ]={1.0, 1.0, 1, 1.0};
 
@@ -121,23 +129,16 @@ GLfloat lum_diffuse2[ ]={1.0, 1.0, 1, 1.0};
 /*************************
 * Paramètres du fog
 */
-
+int switchFog = 1; //Switch on/off fog
 GLfloat fogColor[4] ={0.8,0.8,0.8,1.};
 
-const GLfloat P[4][3]=
-// tableau des sommets du plateau
-{
-{-1,0,1}, // P0
-{1,0,1}, // P1
-{1,0,-1}, // P2
-{-1,0,-1}
-};
 
 
-const GLubyte facette[1][4] =
-{
-	{0,1,2,3}
-};
+
+void fogInit();
+void lightInit();
+void menu();
+
 void resetMouse(){
 	glutWarpPointer(Wwidth/2, Wheight/2);
 	glutWarpPointer(Wwidth/2, Wheight/2);
@@ -166,10 +167,10 @@ void RenderString(float x, float y, void *font, const char* string, float r, flo
   glRasterPos2f(x, y);
 
   glutBitmapString(font, string);
-  lookAt();http://www.opengl.org/resources/libraries/glut/spec3/node50.html
+  lookAt();
   glPopMatrix();
 
-  glEnable(GL_FOG);
+  fogInit();
   glEnable(GL_LIGHTING);
   glEnable(GL_TEXTURE_2D);
 
@@ -416,10 +417,10 @@ void chargeTexture (char *nomFichier,				// nom du fichier en format .raw
   for (i = 5; i >= 0; i--) {
     glBegin(GL_QUADS);
     glNormal3fv(&n[i][0]);
-    glTexCoord2f(0, 0);glVertex3fv(&v[faces[i][0]][0]);
-    glTexCoord2f(repeatTextU, 0);glVertex3fv(&v[faces[i][1]][0]);
-    glTexCoord2f(repeatTextU, repeatTextV);glVertex3fv(&v[faces[i][2]][0]);
-    glTexCoord2f(0, repeatTextV);glVertex3fv(&v[faces[i][3]][0]);
+    glTexCoord2f(0, 0);						glVertex3fv(&v[faces[i][0]][0]);
+    glTexCoord2f(repeatTextU, 0);			glVertex3fv(&v[faces[i][1]][0]);
+    glTexCoord2f(repeatTextU, repeatTextV);	glVertex3fv(&v[faces[i][2]][0]);
+    glTexCoord2f(0, repeatTextV);			glVertex3fv(&v[faces[i][3]][0]);
     glEnd();
   }
 }
@@ -509,6 +510,7 @@ void axes(){
 
 
 void light(){
+
 	glLightfv(GL_LIGHT0, GL_POSITION, lumiere_position);  	//Position Lumière
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lum_ambiante);			//Lumière ambiante
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lum_diffuse);			//Lumière diffuse
@@ -562,6 +564,7 @@ void display(){
  
 }
 
+
 void reshape(int w, int h) // fenétre pour l'affichage de la scène 3D
 {
 	glViewport (0, 0, (GLsizei) w, (GLsizei) h);
@@ -580,6 +583,32 @@ void reshape(int w, int h) // fenétre pour l'affichage de la scène 3D
 
 }
 
+void lightInit(){
+
+	if(switch1){
+		glEnable(GL_LIGHT0);
+	}else{
+		glDisable(GL_LIGHT0);
+	}
+	if(switch2){
+		glEnable(GL_LIGHT1);
+	}else{
+		glDisable(GL_LIGHT1);
+	}
+	if(switch3){
+		glEnable(GL_LIGHT2);
+	}else{
+		glDisable(GL_LIGHT2);
+	}
+}
+
+void fogInit(){
+	if(switchFog){
+		glEnable(GL_FOG);
+	}else{
+		glDisable(GL_FOG);
+	}
+}
 void init(void){
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -587,10 +616,8 @@ void init(void){
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_NORMALIZE);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHT1);
-	glEnable(GL_LIGHT2);
-	glEnable(GL_FOG);
+	lightInit();
+	fogInit();
 	texturing();
 	glMatrixMode(GL_MODELVIEW);					// matrice de modélisation
 	glLoadIdentity();							// matrice d'identité
@@ -602,6 +629,7 @@ void init(void){
 		glPolygonMode(GL_FRONT_AND_BACK,GL_POINT); 	//Mode Point
 	}
 	lookAt();
+	menu();								// Apelle la fonction du menu
 	
 }
 
@@ -622,31 +650,65 @@ void gestionMenu(int value)
 		left = 0;
 		up = 1.3;
 		near = 2.5;
-		init();
+		//init();
 		break;
 	case 4: 
 		left = 0;
 		up = 3;
 		near = 0.1;
-		init();
+		//init();
 		break;
 	case 5:
 		affichageMode = 0;
-		init();
+		//init();
 		break;
 	case 6:
 		affichageMode = 1;
-		init();
+		//init();
 		break;
 	case 7:
 		affichageMode = 2;
-		init();
+		//init();
 		break;
-	case 8: 
+	case 8:
+		if(switch1){
+			switch1 = 0;
+		}else{
+			switch1 = 1;
+		}
+		//lightInit();
+		break;
+	case 9:
+		if(switch2){
+			switch2 = 0;
+		}else{
+			switch2 = 1;
+		}
+		//lightInit();
+		break;
+	case 10:
+		if(switch3){
+			switch3 = 0;
+		}else{
+			switch3 = 1;
+		}
+		//lightInit();
+		break;
+	case 11:
+		if(switchFog){
+			switchFog = 0;
+		}else{
+			switchFog = 1;
+		}
+		//fogInit();
+		break;
+	case 12: 
 		exit(0); 
 		break;
-  }
 
+	
+  }
+  init();
   glutPostRedisplay();
 }
 
@@ -659,7 +721,27 @@ void menu(){
 	glutAddMenuEntry("Mode Solide",5);
 	glutAddMenuEntry("Mode Ligne",6);
 	glutAddMenuEntry("Mode Point",7);
-	glutAddMenuEntry("quitter (q)", 8);
+	if(switch1){
+		glutAddMenuEntry("Lumiere 1 OFF",8);
+	}else{
+		glutAddMenuEntry("Lumiere 1 ON",8);
+	}
+	if(switch2){
+		glutAddMenuEntry("Lumiere 2 OFF",9);
+	}else{
+		glutAddMenuEntry("Lumiere 2 ON",9);
+	}
+	if(switch3){
+		glutAddMenuEntry("Lumiere 3 OFF",10);
+	}else{
+		glutAddMenuEntry("Lumiere 3 ON",10);
+	}
+	if(switchFog){
+		glutAddMenuEntry("Fog OFF",11);
+	}else{
+		glutAddMenuEntry("Fog ON",11);
+	}
+	glutAddMenuEntry("quitter (q)", 12);
 	glutAttachMenu(GLUT_RIGHT_BUTTON); //On attache le menu au bouton gauche de la souris
 }
 
@@ -682,7 +764,7 @@ void  keyboard (unsigned char key, int x, int y)
         case 'q':
         case 'Q':
         case 27 :
-	        gestionMenu(5);
+	        gestionMenu(12);
         	break;
         case 'w':  
         case 'W':
@@ -710,7 +792,7 @@ void  keyboard (unsigned char key, int x, int y)
 }
 
 
-}
+
 void mouseMove(int x, int y){
 
 	deplacementX = ((float)x - Wwidth) /((float)(Wwidth/2)-100);
@@ -754,7 +836,7 @@ int main(int argc, char** argv)
 
 	init();								// Apelle la fonction d'initialisation
 	glutDisplayFunc(display);			// Apelle la fonction d'affichage
-	menu();								// Apelle la fonction du menu
+	
 	glutKeyboardFunc(keyboard);			// Apelle la fonction de gestion du clavier
 	glutIdleFunc(anime);				// Apelle la fonction d'animation
 	glutMainLoop();						// Lance la boucle
