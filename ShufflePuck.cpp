@@ -203,7 +203,7 @@ void deplacementPalet(){
 	palet1DZ = deplacementZ - deplacementPZ;
 	palet1z += palet1DZ;
 	limiteSup = (tableP/6 + paletP/2);
-	limiteInf = (tableP/2 + paletP/2);
+	limiteInf = (tableP/2 - paletP/2);
 
 	if (palet1z >= limiteInf){
 		palet1z = limiteInf;
@@ -303,10 +303,14 @@ void deplacementBalle(int start){
 	}
 
 	//Collisions bordures
+	//Droite
 	if (balleX >= tableL/2 - 0.02 - ballSize/2){ balleDX *= -1 ;}
+	//Gauche
 	if (balleX <= -(tableL/2 - 0.02 - ballSize/2)){ balleDX *= -1 ;}
 	
+	//Bas
 	if (balleZ >= tableP/2){ winner = 2;resetMouse();initGame(0);};
+	//Haut avec gestion de l'espace de but
 	if (balleZ <= -tableP/2){ 
 		if(balleX > -(tableL/6) && balleX < (tableL/6)){
 			winner = 1;resetMouse();initGame(0);
@@ -317,7 +321,8 @@ void deplacementBalle(int start){
 		
 	//Collision palet
 	boudingPalet(balleX,balleZ);
-	
+
+	//Déplacement
 	balleX += balleDX;
 	balleZ += balleDZ;
 }
