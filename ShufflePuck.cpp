@@ -411,7 +411,7 @@ void chargeTexture (char *nomFichier,				// nom du fichier en format .raw
 	//  construit les mipmaps 
 	//  ***********************
 	//  * Attention, pour linux, il faut mettre GL_BGR en 5 ème position, sinon le bleu et le rouge
-	//  * sont inversé
+	//  * sont inversé. Pour windows, GL_RGB
 	gluBuild2DMipmaps ( GL_TEXTURE_2D, typeCouleur, largeur, hauteur,
 		GL_BGR, GL_UNSIGNED_BYTE, texture );
 
@@ -552,11 +552,9 @@ void light(){
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lum_diffuse);			//Lumière diffuse
 
 	glLightfv(GL_LIGHT1, GL_POSITION, lumiere_position1);  	//Position Lumière
-	//glLightfv(GL_LIGHT1, GL_AMBIENT, lum_ambiante1);			//Lumière ambiante
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, lum_diffuse1);			//Lumière diffuse
 
 	glLightfv(GL_LIGHT2, GL_POSITION, lumiere_position2);  	//Position Lumière
-	//glLightfv(GL_LIGHT2, GL_AMBIENT, lum_ambiante2);			//Lumière ambiante
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, lum_diffuse2);			//Lumière diffuse
 
 }
